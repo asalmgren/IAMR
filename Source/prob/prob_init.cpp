@@ -628,6 +628,9 @@ void NavierStokes::init_ConvectedVortex (Box const& vbx,
 {
   const auto domlo = amrex::lbound(domain);
 
+  if ( IC.meanFlowDir < -3 || IC.meanFlowDir > 3 )
+    amrex::Abort("\n    init_ConvectedVortex: prob.meanFlowDir must be 0 (no mean flow) or +/-1, +/-2, +/-3\n    in the inputs file.");
+
   amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
   {
     AMREX_D_TERM(Real x = problo[0] + (i - domlo.x + 0.5)*dx[0];,
@@ -648,6 +651,11 @@ void NavierStokes::init_ConvectedVortex (Box const& vbx,
     // Fill Velocity
     //
     switch(IC.meanFlowDir) {
+      case 0  :
+         AMREX_D_TERM(vel(i,j,k,0) = u_vort;,
+                      vel(i,j,k,1) = v_vort;,
+                      vel(i,j,k,2) = w_vort);
+         break;
       case 1  :
          AMREX_D_TERM(vel(i,j,k,0) = IC.meanFlowMag + u_vort;,
                       vel(i,j,k,1) = v_vort;,
@@ -659,13 +667,13 @@ void NavierStokes::init_ConvectedVortex (Box const& vbx,
                       vel(i,j,k,2) = w_vort);
          break;
       case 2 :
-         AMREX_D_TERM(vel(i,j,k,0) = v_vort;,
-                      vel(i,j,k,1) = IC.meanFlowMag + u_vort;,
+         AMREX_D_TERM(vel(i,j,k,0) = u_vort;,
+                      vel(i,j,k,1) = IC.meanFlowMag + v_vort;,
                       vel(i,j,k,2) = w_vort);
          break;
       case -2 :
-         AMREX_D_TERM(vel(i,j,k,0) = v_vort;,
-                      vel(i,j,k,1) = -IC.meanFlowMag + u_vort;,
+         AMREX_D_TERM(vel(i,j,k,0) = u_vort;,
+                      vel(i,j,k,1) = -IC.meanFlowMag + v_vort;,
                       vel(i,j,k,2) = w_vort);
          break;
       case 3 :
